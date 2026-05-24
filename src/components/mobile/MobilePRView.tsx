@@ -1,4 +1,4 @@
-import { ChevronLeft, Share, MoreHorizontal, Github, FileCode, Maximize2 } from "lucide-react";
+import { ChevronLeft, Share, MoreHorizontal, Github, Maximize2 } from "lucide-react";
 import { useAstra } from "../../context/AstraContext";
 import { CodeDiff } from "../CodeDiff";
 import { useState } from "react";

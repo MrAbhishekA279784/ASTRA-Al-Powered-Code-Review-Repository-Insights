@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { Menu, Bell, Search, ScanLine, GitPullRequest, FolderGit2, Sparkles, FileText, Github } from 'lucide-react';
 import { useAstra } from '../../context/AstraContext';
+import { useAuth } from '../../hooks/useAuth';
 
 export function MobileHome() {
-  const { analyzePR, isAnalyzing, setCurrentView } = useAstra();
+  const { analyzePR, isAnalyzing, setCurrentView, quotaCooldown } = useAstra();
+  const { user } = useAuth();
   const [url, setUrl] = useState('');
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  const handleAnalyze = (e: FormEvent) => {
     e.preventDefault();
     if (url) analyzePR(url);
   };
@@ -19,15 +21,19 @@ export function MobileHome() {
         <span className="font-sans font-bold text-[14px] tracking-[0.15em] text-[#1C1C1E]">ASTRA.</span>
         <div className="flex items-center gap-3">
           <button className="p-1"><Bell size={20} className="text-[#1C1C1E]" /></button>
-          <div onClick={() => setCurrentView('profile')} className="w-8 h-8 rounded-full bg-[#EADDD7] text-[#1C1C1E] flex items-center justify-center text-sm font-semibold cursor-pointer">
-            A
+          <div onClick={() => setCurrentView('profile')} className="w-8 h-8 rounded-full bg-[#EADDD7] text-[#1C1C1E] flex items-center justify-center overflow-hidden cursor-pointer">
+            {user?.photoURL ? (
+              <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm font-semibold">{user?.email?.charAt(0)?.toUpperCase() || 'A'}</span>
+            )}
           </div>
         </div>
       </header>
 
       <div className="px-5 mt-6">
         <h1 className="text-2xl font-bold text-[#1C1C1E]">
-          Good morning, Aditya <span className="inline-block motion-safe:animate-bounce">👋</span>
+          Good morning{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''} <span className="inline-block motion-safe:animate-bounce">👋</span>
         </h1>
         <p className="text-[#8E8E93] text-sm mt-2 max-w-[240px] leading-relaxed">
           AI-powered code reviews for better software.
@@ -42,13 +48,13 @@ export function MobileHome() {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste GitHub URL (PR or Repo)"
               className="w-full bg-[#F5F4F1] border-none rounded-2xl py-4 pl-12 pr-12 text-[15px] focus:outline-none text-[#1C1C1E] placeholder:text-[#8E8E93] transition-colors font-sans"
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || quotaCooldown}
             />
             <ScanLine className="absolute right-4 w-5 h-5 text-[#8E8E93]" />
           </div>
           <button
             type="submit"
-            disabled={isAnalyzing || !url}
+            disabled={isAnalyzing || !url || quotaCooldown}
             className="w-full bg-[#1C1C1E] text-white rounded-2xl py-4 font-semibold text-[15px] flex items-center justify-center disabled:opacity-50 active:scale-[0.98] transition-transform"
           >
             {isAnalyzing ? (

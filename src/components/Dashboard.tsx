@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Activity, GitPullRequest, ArrowRight } from 'lucide-react';
+import { useState, FormEvent } from 'react';
+import { Activity, GitPullRequest, ArrowRight, Github } from 'lucide-react';
 import { useAstra } from '../context/AstraContext';
 
 export function Dashboard() {
-  const { analyzePR, isAnalyzing, showToast } = useAstra();
+  const { analyzePR, isAnalyzing, showToast, quotaCooldown } = useAstra();
   const [url, setUrl] = useState('');
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  const handleAnalyze = (e: FormEvent) => {
     e.preventDefault();
     if (url) {
       analyzePR(url);
@@ -34,7 +34,7 @@ export function Dashboard() {
           />
           <button
             type="submit"
-            disabled={isAnalyzing || !url}
+            disabled={isAnalyzing || !url || quotaCooldown}
             className="absolute right-2 top-2 bottom-2 px-4 bg-astra-text text-astra-elevated hover:bg-astra-purple-light transition-colors flex items-center justify-center disabled:opacity-50"
           >
             {isAnalyzing ? (

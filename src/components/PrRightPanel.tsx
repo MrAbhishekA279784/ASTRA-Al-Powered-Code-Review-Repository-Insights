@@ -1,6 +1,7 @@
 import { Sparkles, FileText, Send, X } from "lucide-react";
 import { useState } from "react";
 import { useAstra } from "../context/AstraContext";
+import { fetchJson } from "../lib/fetch-json";
 
 function ScoreGauge({ score }: { score: number }) {
   const radius = 38;
@@ -76,7 +77,7 @@ export function PrRightPanel() {
     setChatHistory((prev) => [...prev, { role: "user", content: msg }]);
 
     try {
-      const res = await fetch("/api/chat", {
+      const data = await fetchJson("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -86,10 +87,9 @@ export function PrRightPanel() {
           history: chatHistory
         })
       });
-      const data = await res.json();
       setChatHistory((prev) => [...prev, { role: "model", content: data.text }]);
     } catch (e) {
-      console.error(e);
+      console.error("[ASTRA] Chat error:", e);
       setChatHistory((prev) => [...prev, { role: "model", content: "Error communicating with AI." }]);
     } finally {
       setIsChatting(false);
@@ -99,7 +99,7 @@ export function PrRightPanel() {
   const generateDocs = async () => {
     setIsGeneratingDocs(true);
     try {
-      const res = await fetch("/api/generate-docs", {
+      const data = await fetchJson("/api/generate-docs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -108,10 +108,9 @@ export function PrRightPanel() {
           diff: prData?.diff
         })
       });
-      const data = await res.json();
       setGeneratedDocs(data.markdown);
     } catch (e) {
-      console.error(e);
+      console.error("[ASTRA] Docs error:", e);
       setGeneratedDocs("Error generating documentation.");
     } finally {
       setIsGeneratingDocs(false);

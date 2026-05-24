@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { fetchJson, FetchError } from '../lib/fetch-json';
 
 export type ViewType = 'dashboard' | 'pr' | 'activity' | 'repos' | 'docs' | 'chat' | 'profile' | 'ai-review' | 'reports' | 'changelog' | 'settings';
 
@@ -105,7 +106,7 @@ export function AstraProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("[ASTRA] analyzePR request origin: user click, url:", url);
 
-      const res = await fetch('/api/review-pr', {
+      const data = await fetchJson('/api/review-pr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ githubUrl: url }),
@@ -117,18 +118,6 @@ export function AstraProvider({ children }: { children: React.ReactNode }) {
         setIsAnalyzing(false);
         return;
       }
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        const msg = errorData.error || 'Failed to analyze PR';
-        if (msg.includes('quota') || msg.includes('429')) {
-          setQuotaCooldown(true);
-          setTimeout(() => setQuotaCooldown(false), 30000);
-        }
-        throw new Error(msg);
-      }
-
-      const data = await res.json();
 
       cacheRef.current.set(cacheKey, {
         prData: data.prData,
@@ -146,8 +135,13 @@ export function AstraProvider({ children }: { children: React.ReactNode }) {
         console.log("[ASTRA] analyzePR aborted");
         return;
       }
-      setError(e.message);
-      showToast(e.message, 'error');
+      const msg = e.message || 'Failed to analyze PR';
+      if (msg.includes('quota') || e.status === 429) {
+        setQuotaCooldown(true);
+        setTimeout(() => setQuotaCooldown(false), 30000);
+      }
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       analyzingRef.current = false;
       setIsAnalyzing(false);

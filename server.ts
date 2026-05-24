@@ -61,6 +61,19 @@ function handleError(error: any, res: any, context: string): void {
   res.status(500).json({ error: msg || "An unknown AI error occurred." });
 }
 
+async function fetchGitHubJson(url: string): Promise<any> {
+  const res = await fetch(url, { headers: { Accept: 'application/vnd.github.v3+json' } });
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    console.error('[ASTRA] GitHub API returned non-JSON:', { url, status: res.status, preview: text.substring(0, 200) });
+    throw new Error(`GitHub API error (${res.status})`);
+  }
+  const data = await res.json();
+  if (!res.ok) throw new Error(`GitHub API error: ${data.message || res.status}`);
+  return data;
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -85,14 +98,14 @@ async function startServer() {
 
       const [, owner, repo, pull_number] = match;
 
-      const prRes = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}`,
-        { headers: { Accept: "application/vnd.github.v3+json" } }
-      );
-      if (!prRes.ok) {
-        return res.status(prRes.status).json({ error: "Failed to fetch PR from GitHub." });
+      let prData: any;
+      try {
+        prData = await fetchGitHubJson(
+          `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}`
+        );
+      } catch (err: any) {
+        return res.status(502).json({ error: `Failed to fetch PR from GitHub: ${err.message}` });
       }
-      const prData = await prRes.json();
 
       const diffRes = await fetch(prData.diff_url, {
         headers: { Accept: "application/vnd.github.v3.diff" },
@@ -107,11 +120,14 @@ async function startServer() {
         diffText = diffText.substring(0, 30000) + "\n\n... [diff truncated due to size]";
       }
 
-      const filesRes = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}/files`,
-        { headers: { Accept: "application/vnd.github.v3+json" } }
-      );
-      let filesData = await filesRes.json();
+      let filesData: any[] = [];
+      try {
+        filesData = await fetchGitHubJson(
+          `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}/files`
+        );
+      } catch (err: any) {
+        console.warn(`[ASTRA-REQ] Failed to fetch files: ${err.message}`);
+      }
       if (Array.isArray(filesData) && filesData.length > 10) {
         filesData = filesData
           .sort((a: any, b: any) => (b.changes || 0) - (a.changes || 0))
@@ -213,6 +229,11 @@ async function startServer() {
       console.error(`[ASTRA] ERROR /api/chat:`, { message: error?.message, name: error?.name, stack: error?.stack?.substring(0, 500) });
       handleError(error, res, "/api/chat");
     }
+  });
+
+  // ─── Catch-all for unmatched API routes ─────────────────────────────────────
+  app.use("/api/*", (_req, res) => {
+    res.status(404).json({ error: "API endpoint not found." });
   });
 
   // ─── Vite / Static Serving ───────────────────────────────────────────────────

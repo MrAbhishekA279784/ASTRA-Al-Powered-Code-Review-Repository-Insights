@@ -59,6 +59,8 @@ export async function callOpenRouter(
 
     console.log(`[AI] Request Complete`);
 
+    const contentType = res.headers.get('content-type') || '';
+
     if (!res.ok) {
       const errBody = await res.text();
       let errMsg: string;
@@ -93,6 +95,19 @@ export async function callOpenRouter(
           }
           throw new OpenRouterError(errMsg.substring(0, 300), 'unknown');
       }
+    }
+
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error('[AI] OpenRouter returned non-JSON response:', {
+        status: res.status,
+        contentType,
+        preview: text.substring(0, 300),
+      });
+      throw new OpenRouterError(
+        `Provider returned unexpected response (${res.status})`,
+        'unavailable'
+      );
     }
 
     const data: OpenRouterResponse = await res.json();

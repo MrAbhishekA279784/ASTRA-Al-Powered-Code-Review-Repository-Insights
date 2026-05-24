@@ -1,5 +1,6 @@
 import { ChevronLeft, MoreHorizontal, SendHorizontal } from "lucide-react";
 import { useAstra } from "../../context/AstraContext";
+import { fetchJson } from "../../lib/fetch-json";
 import { useState, KeyboardEvent } from "react";
 
 export function MobileChat() {
@@ -15,7 +16,7 @@ export function MobileChat() {
     setChatHistory((prev) => [...prev, { role: 'user', content: message }]);
 
     try {
-      const res = await fetch('/api/chat', {
+      const data = await fetchJson('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -25,11 +26,6 @@ export function MobileChat() {
           history: chatHistory,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Chat failed');
-      }
-      const data = await res.json();
       setChatHistory((prev) => [...prev, { role: 'assistant', content: data.text || data.response || 'No response' }]);
     } catch (e: any) {
       showToast(e.message || 'Chat error', 'error');

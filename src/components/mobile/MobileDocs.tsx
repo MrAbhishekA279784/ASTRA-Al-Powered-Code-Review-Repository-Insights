@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, FileText, Code2, History, Users, GitMerge, ShieldAlert, Loader2 } from "lucide-react";
 import { useAstra } from "../../context/AstraContext";
+import { fetchJson } from "../../lib/fetch-json";
 
 export function MobileDocs() {
   const { setCurrentView, prData, showToast } = useAstra();
@@ -18,7 +19,7 @@ export function MobileDocs() {
     }
     setGenerating(true);
     try {
-      const res = await fetch('/api/generate-docs', {
+      const data = await fetchJson('/api/generate-docs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -27,12 +28,10 @@ export function MobileDocs() {
           diff: prData.diff,
         }),
       });
-      if (!res.ok) throw new Error('Failed to generate docs');
-      const data = await res.json();
       showToast('Documentation generated successfully', 'success');
       setGenerating(false);
-    } catch {
-      showToast('Error generating documentation', 'error');
+    } catch (e: any) {
+      showToast(e.message || 'Error generating documentation', 'error');
       setGenerating(false);
     }
   };

@@ -44,6 +44,27 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '10mb' }));
 
+  // ─── CORS ─────────────────────────────────────────────────────────────────────
+  const ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'https://astra-ai-review.vercel.app',
+    'https://astra-ai-code-review.vercel.app',
+    process.env.CLIENT_ORIGIN || '',
+  ].filter(Boolean);
+
+  app.use((_req, res, next) => {
+    const origin = _req.headers.origin || '';
+    if (ALLOWED_ORIGINS.includes(origin) || !origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    if (_req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+  });
+
   // ─── Route: Review PR ────────────────────────────────────────────────────────
   app.post('/api/review-pr', async (req, res) => {
     try {

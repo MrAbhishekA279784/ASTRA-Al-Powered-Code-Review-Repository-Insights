@@ -130,7 +130,7 @@ If the primary model fails or times out (> 15 seconds), the system automatically
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    BROWSER                          │
-│  React + Vite (Vercel CDN)                         │
+│  React + Vite (Vercel CDN)                          │
 └──────────────────────┬──────────────────────────────┘
                        │  REST API calls
                        ▼
